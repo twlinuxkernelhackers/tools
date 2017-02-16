@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+#
+# Manipulate youtube url with customized period
+#
+# Copyright (c) 2017 Taiwan Linux Kernel Hackers
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import argparse
+import datetime
+import sys
+import time
+
+YOUTUBE_URL='https://www.youtube.com/v/bFI_JCIkgEY'
+
+def converter(tstr='00:00:00'):
+    t_list = tstr.split(':')
+    fmt = '%S'
+    if len(t_list) > 2:
+        fmt = '%H:%M:%S'
+    elif len(t_list) > 1:
+        fmt = '%M:%S'
+    else:
+        fmt = '%S'
+
+    try:
+        t = time.strptime(tstr, fmt)
+        sec = datetime.timedelta(hours=t.tm_hour,
+                                 minutes=t.tm_min,
+                                 seconds=t.tm_sec).seconds
+        return sec
+    except:
+        print('Error: Wrong time format -- "{}"'.format(tstr))
+        raise
+
+def convert_time_strings(time_string_list=[]):
+    time_sec_list = [converter(t) for t in  time_string_list]
+    print('Time period: {}'.format(time_string_list))
+    print('Time period in second: {}'.format(time_sec_list))
+    return time_sec_list
+
+def new_url(base_url='', time_sec=[]):
+    url = base_url + '?autoplay=1'
+    str_start = '&start={}'.format(time_sec[0]) if len(time_sec) > 0 else ''
+    str_end = '&end={}'.format(time_sec[1]) if len(time_sec) > 1 else ''
+    url += str_start + str_end
+    return url
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-u', '--url', action='store', default=YOUTUBE_URL,
+                        help='youtube url')
+    parser.add_argument('time', nargs='*',
+                                help='start/end time presented as "%H:%M:%S"')
+    return parser.parse_args()
+
+def main():
+    args = parse_args()
+
+    try:
+        time_sec = convert_time_strings(args.time)
+    except:
+        return -1
+
+    if len(time_sec) > 1 and time_sec[1] < time_sec[0]:
+        print('ERROR: end time > start time')
+        return -1
+
+    url = new_url(args.url, time_sec)
+    print('Youtube url in period is =>\n    {}'.format(url))
+
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
